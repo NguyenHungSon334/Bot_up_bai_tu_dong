@@ -1,0 +1,41 @@
+{# Queue + history. Rendered inside index.html and alone by GET /feed (live refresh). #}
+{% macro post_card(p) %}
+  <article class="post">
+    <div class="when">{% set day, hour = p.scheduled_at.split('T') %}<b>{{ hour }}</b>{{ day[8:10] }}/{{ day[5:7] }}</div>
+    <div class="body">
+      <div class="text">{{ p.content }}</div>
+      <div class="meta">{% if p.only_me %}🔒 Chỉ mình tôi · {% endif %}{% if p.n_media %}📎 {{ p.n_media }} file · {% endif %}{{ p.deliveries|length }} đích{% if p.cost %} · ${{ '%.2f'|format(p.cost) }}{% endif %}</div>
+      <div class="dl">
+        {% for d in p.deliveries %}
+          {% set ds = 'running' if p.status == 'running' and d.status == 'pending' else d.status %}
+          <span class="d s-{{ ds }}" title="{{ d.error or label[ds] }}">
+            {% if d.post_url and d.post_url.startswith('https://') %}<a href="{{ d.post_url }}" target="_blank" rel="noopener">{{ d.name }} ↗</a>{% else %}{{ d.name }}{% endif %}
+            · {{ label[ds] }}</span>
+        {% endfor %}
+      </div>
+      {% if p.error %}<div class="err">{{ p.error }}</div>{% endif %}
+      {% for d in p.deliveries if d.error and not p.error %}<div class="err">{{ d.name }}: {{ d.error }}</div>{% endfor %}
+    </div>
+    <div class="actions">
+      <span class="tag s-{{ p.status }}">{{ label[p.status] }}</span>
+      {% if p.status == 'pending' %}
+        <form method="post" action="{{ url_for('run_now', pid=p.id) }}"><button class="mini">Chạy ngay</button></form>
+      {% endif %}
+      {% if p.status in ('failed', 'partial') %}
+        <form method="post" action="{{ url_for('retry_post', pid=p.id) }}" onsubmit="return confirm('Chỉ chạy lại các đích LỖI. Đã kiểm tra FB là chưa lên?')"><button class="mini">Thử lại</button></form>
+      {% endif %}
+      {% if p.status != 'running' %}
+        <form method="post" action="{{ url_for('delete_post', pid=p.id) }}" onsubmit="return confirm('Xoá bài này khỏi danh sách?')"><button class="mini danger">Xoá</button></form>
+      {% endif %}
+    </div>
+  </article>
+{% endmacro %}
+
+<section>
+  <h2>Hàng đợi ({{ queue|length }})</h2>
+  {% for p in queue %}{{ post_card(p) }}{% else %}<div class="empty">Hàng đợi trống.</div>{% endfor %}
+</section>
+<section>
+  <h2>Lịch sử</h2>
+  {% for p in history %}{{ post_card(p) }}{% else %}<div class="empty">Chưa có bài nào chạy.</div>{% endfor %}
+</section>

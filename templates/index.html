@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bàn điều phối đăng bài</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f4f1ea; --card: #fffdf8; --ink: #1d1b16; --muted: #75705f; --line: #ddd6c6;
+    --accent: #1f4fd1; --accent-soft: #e6ecfb; --ok: #1d7a45; --warn: #b26b00; --bad: #b3261e; --run: #6b3fd1;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 "Be Vietnam Pro", system-ui, sans-serif; }
+  header { padding: 22px 32px 14px; border-bottom: 2px solid var(--ink); display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+  header .clock { font-family: var(--mono); color: var(--muted); font-size: 13px; }
+  header a { margin-left: auto; color: var(--accent); font-weight: 600; text-decoration: none; }
+  main { display: grid; grid-template-columns: minmax(0, 480px) minmax(0, 1fr); gap: 32px; padding: 24px 32px 48px; align-items: start; }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr; padding: 16px; } header { padding: 18px 16px 12px; } }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 10px; }
+  .flash { background: #fff4d6; border-left: 4px solid var(--warn); padding: 10px 14px; margin: 16px 32px 0; }
+
+  /* composer */
+  .composer { background: var(--card); border: 1px solid var(--line); border-radius: 4px; box-shadow: 5px 5px 0 var(--ink); position: sticky; top: 16px; }
+  .composer textarea { display: block; width: 100%; min-height: 190px; border: 0; border-bottom: 1px solid var(--line); padding: 18px; font: inherit; font-size: 16px; resize: vertical; background: transparent; color: inherit; }
+  .composer textarea:focus { outline: none; background: #fff; }
+  .block { padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .block-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .block-title button { all: unset; cursor: pointer; color: var(--accent); text-transform: none; letter-spacing: 0; font-weight: 600; }
+  .drop { position: relative; border: 1.5px dashed var(--line); border-radius: 4px; padding: 14px; text-align: center; color: var(--muted); font-size: 14px; transition: border-color .15s, background .15s; }
+  .drop.over, .drop:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .previews { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin-top: 8px; }
+  .previews:empty { display: none; }
+  .previews > * { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 3px; background: #000; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { position: relative; }
+  .chip input { position: absolute; opacity: 0; }
+  .chip span, .tbtn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; cursor: pointer; font-size: 14px; user-select: none; transition: background .12s, border-color .12s, color .12s; }
+  .chip span small { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .chip input:checked + span, .tbtn.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .chip input:checked + span small { color: #bdb7a6; }
+  .chip input:focus-visible + span, .tbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tbtn { font: inherit; font-size: 14px; color: var(--ink); }
+  .tbtn:hover, .chip span:hover { border-color: var(--ink); }
+  input.dt { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; font: inherit; font-size: 14px; background: #fff; color: inherit; }
+  .submit { display: flex; gap: 10px; align-items: center; padding: 14px 18px; }
+  .submit .hint { color: var(--muted); font-size: 12px; font-family: var(--mono); }
+  .go { margin-left: auto; padding: 11px 22px; border: 2px solid var(--ink); background: var(--ink); color: var(--paper); font: inherit; font-weight: 700; border-radius: 3px; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+  .go:hover { transform: translate(-2px, -2px); box-shadow: 3px 3px 0 var(--accent); }
+  .go:active { transform: none; box-shadow: none; }
+  details.manage { padding: 0 18px 14px; font-size: 14px; }
+  details.manage summary { cursor: pointer; color: var(--muted); padding-top: 12px; }
+  .addt { display: flex; gap: 6px; margin-top: 10px; }
+  .addt input { flex: 1; min-width: 0; padding: 7px 9px; border: 1px solid var(--line); border-radius: 3px; font: inherit; font-size: 14px; }
+  .addt input[name=name] { flex: 0 0 120px; }
+  .addt button, .mini { padding: 4px 10px; font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 3px; cursor: pointer; }
+  .addt button:hover, .mini:hover { border-color: var(--ink); }
+  .mini.danger:hover { border-color: var(--bad); color: var(--bad); }
+  .tlist { list-style: none; margin: 8px 0 0; padding: 0; }
+  .tlist li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); }
+  .tlist .u { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* feed */
+  section + section { margin-top: 32px; }
+  .post { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; margin-bottom: 10px; display: grid; grid-template-columns: 92px 1fr auto; gap: 14px; }
+  @media (max-width: 600px) { .post { grid-template-columns: 1fr; } }
+  .post .when { font-family: var(--mono); font-size: 13px; line-height: 1.35; }
+  .post .when b { display: block; font-size: 18px; }
+  .post .body { min-width: 0; }
+  .post .text { white-space: pre-line; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; color: #3a372f; }
+  .post .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .dl { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .dl .d { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; }
+  .dl .d a { color: inherit; }
+  .err { color: var(--bad); font-size: 12px; margin-top: 6px; }
+  .actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .actions form { margin: 0; }
+  .tag { font-family: var(--mono); font-size: 11px; padding: 2px 7px; border-radius: 2px; color: #fff; white-space: nowrap; }
+  .s-pending { color: var(--muted); } .s-running { color: var(--run); } .s-done { color: var(--ok); }
+  .s-pending_approval { color: var(--warn); } .s-failed { color: var(--bad); } .s-partial { color: var(--warn); }
+  .tag.s-pending { background: var(--muted); color: #fff; } .tag.s-running { background: var(--run); color: #fff; }
+  .tag.s-done { background: var(--ok); color: #fff; } .tag.s-failed { background: var(--bad); color: #fff; }
+  .tag.s-partial, .tag.s-pending_approval { background: var(--warn); color: #fff; }
+  .empty { padding: 22px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bàn điều phối đăng bài</h1>
+  <span class="clock">bây giờ {{ now.replace('T', ' ') }}</span>
+  <a href="{{ url_for('index') }}">↻ Làm mới</a>
+</header>
+
+{% for m in get_flashed_messages() %}<div class="flash">{{ m }}</div>{% endfor %}
+
+<main>
+  <div>
+    <form class="composer" id="composer" method="post" action="{{ url_for('add_post') }}" enctype="multipart/form-data">
+      <textarea name="content" id="content" required autofocus placeholder="Dán nội dung bài..."></textarea>
+
+      <div class="block">
+        <div class="drop" id="drop">
+          <input type="file" name="images" id="files" multiple accept="image/*,video/mp4,video/quicktime" aria-label="Ảnh / video">
+          📎 Kéo thả hoặc bấm để thêm ảnh / video
+        </div>
+        <div class="previews" id="previews"></div>
+      </div>
+
+      <div class="block">
+        <div class="block-title">Đăng vào {% if targets %}<button type="button" id="all">Chọn tất cả</button>{% endif %}</div>
+        <div class="chips" id="targets">
+          {% for t in targets %}
+            <label class="chip"><input type="checkbox" name="target_ids" value="{{ t.id }}"><span>{{ t.name }} <small>{{ kind_label[t.kind] }}</small></span></label>
+          {% else %}
+            <span class="meta">Chưa có đích — thêm ở “Quản lý đích” bên dưới.</span>
+          {% endfor %}
+        </div>
+        <div class="chips" style="margin-top:8px">
+          <label class="chip" title="Chỉ cho Trang cá nhân. Page/Group không đặt riêng tư được."><input type="checkbox" name="only_me" value="1"><span>🔒 Chỉ mình tôi</span></label>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="block-title">Khi nào</div>
+        <div class="chips" id="when-chips">
+          <button type="button" class="tbtn on" data-add="0">Ngay</button>
+          <button type="button" class="tbtn" data-add="30">+30 phút</button>
+          <button type="button" class="tbtn" data-add="60">+1 giờ</button>
+          <button type="button" class="tbtn" data-at="20:00">Tối 20:00</button>
+          <button type="button" class="tbtn" data-at="08:00" data-day="1">Mai 8:00</button>
+          <input type="datetime-local" class="dt" id="dt" aria-label="Giờ khác">
+        </div>
+        <input type="hidden" name="when" id="when">
+      </div>
+
+      <div class="submit">
+        <span class="hint">Ctrl + Enter</span>
+        <button class="go" type="submit" id="go">Đăng ngay</button>
+      </div>
+
+      <details class="manage">
+        <summary>Quản lý đích ({{ targets|length }})</summary>
+        <ul class="tlist">
+          {% for t in targets %}
+            <li><span><b>{{ t.name }}</b> <small class="meta">{{ kind_label[t.kind] }}</small><div class="u">{{ t.url }}</div></span>
+              <button class="mini danger" type="submit" form="del-t{{ t.id }}">Xoá</button></li>
+          {% endfor %}
+        </ul>
+        <div class="addt">
+          <input name="name" form="add-target" placeholder="Tên" required>
+          <input name="url" form="add-target" type="url" placeholder="URL page / group (cá nhân: facebook.com/me)" required>
+          <button form="add-target" type="submit">Thêm</button>
+        </div>
+      </details>
+    </form>
+    <form id="add-target" method="post" action="{{ url_for('add_target') }}"></form>
+    {% for t in targets %}
+      <form id="del-t{{ t.id }}" method="post" action="{{ url_for('delete_target', tid=t.id) }}" onsubmit="return confirm('Xoá đích {{ t.name }}?')"></form>
+    {% endfor %}
+  </div>
+
+  <div id="feed">{% include "_feed.html" %}</div>
+</main>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+    del(k) { try { localStorage.removeItem(k); } catch {} },
+  };
+  const pad = (n) => String(n).padStart(2, '0');
+  const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+  // Draft text survives reloads (e.g. after adding a target).
+  const content = $('#content');
+  content.value = store.get('draft') || '';
+  content.addEventListener('input', () => store.set('draft', content.value));
+
+  // Remember last chosen targets.
+  const boxes = [...document.querySelectorAll('#targets input')];
+  const saved = JSON.parse(store.get('targets') || '[]');
+  boxes.forEach((b) => { b.checked = saved.includes(b.value); });
+  const saveTargets = () => store.set('targets', JSON.stringify(boxes.filter((b) => b.checked).map((b) => b.value)));
+  boxes.forEach((b) => b.addEventListener('change', saveTargets));
+  $('#all')?.addEventListener('click', () => {
+    const allOn = boxes.every((b) => b.checked);
+    boxes.forEach((b) => { b.checked = !allOn; });
+    saveTargets();
+  });
+
+  // Media previews + drag highlight.
+  const files = $('#files'), drop = $('#drop'), previews = $('#previews');
+  files.addEventListener('change', () => {
+    previews.replaceChildren(...[...files.files].map((f) => {
+      const el = document.createElement(f.type.startsWith('video') ? 'video' : 'img');
+      el.src = URL.createObjectURL(f);
+      el.title = f.name;
+      if (el.tagName === 'VIDEO') el.muted = true;
+      return el;
+    }));
+  });
+  ['dragenter', 'dragover'].forEach((e) => drop.addEventListener(e, () => drop.classList.add('over')));
+  ['dragleave', 'drop'].forEach((e) => drop.addEventListener(e, () => drop.classList.remove('over')));
+
+  // Time chips -> hidden "when" (empty = now) + button label.
+  const when = $('#when'), go = $('#go'), dt = $('#dt'), chips = [...document.querySelectorAll('#when-chips .tbtn')];
+  const setWhen = (value, chip) => {
+    chips.forEach((c) => c.classList.toggle('on', c === chip));
+    when.value = value;
+    go.textContent = value ? `Hẹn ${value.slice(11)} ${value.slice(8, 10)}/${value.slice(5, 7)}` : 'Đăng ngay';
+  };
+  chips.forEach((c) => c.addEventListener('click', () => {
+    const d = new Date();
+    if (c.dataset.at) {
+      const [h, m] = c.dataset.at.split(':');
+      d.setDate(d.getDate() + Number(c.dataset.day || 0));
+      d.setHours(h, m, 0, 0);
+      if (d < new Date()) d.setDate(d.getDate() + 1);
+    } else {
+      d.setMinutes(d.getMinutes() + Number(c.dataset.add));
+    }
+    setWhen(c.dataset.add === '0' ? '' : fmt(d), c);
+    dt.value = '';
+  }));
+  dt.addEventListener('change', () => setWhen(dt.value, null));
+
+  // Validate + submit.
+  const form = $('#composer');
+  form.addEventListener('submit', (e) => {
+    if (!boxes.some((b) => b.checked)) { e.preventDefault(); alert('Chọn ít nhất 1 đích đăng.'); return; }
+    store.del('draft');
+  });
+  content.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) form.requestSubmit();
+  });
+
+  // Live status: always poll /feed (just the queue + history HTML) while the tab is visible,
+  // and only touch the DOM when something changed. The composer is never re-rendered.
+  // ponytail: 3s polling on localhost; switch to SSE only if this ever matters.
+  const feed = $('#feed'), clock = $('.clock');
+  let last = feed.innerHTML.trim(), busy = false;
+  const refresh = async () => {
+    clock.textContent = 'bây giờ ' + fmt(new Date()).replace('T', ' ');
+    if (document.hidden || busy) return;
+    busy = true;
+    try {
+      const res = await fetch('{{ url_for("feed_partial") }}', { cache: 'no-store' });
+      if (res.ok) {
+        const html = (await res.text()).trim();
+        if (html !== last) { feed.innerHTML = html; last = html; }
+      }
+    } catch {} finally { busy = false; }
+  };
+  setInterval(refresh, 3000);
+  document.addEventListener('visibilitychange', refresh);
+})();
+</script>
+</body>
+</html>

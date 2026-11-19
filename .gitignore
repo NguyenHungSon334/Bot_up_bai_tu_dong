@@ -1,0 +1,18 @@
+# Facebook login session (cookies) - never commit
+chrome-profile/
+
+# User data: uploaded media, queue/history DB, run logs + screenshots
+media/
+logs/
+bot.db
+bot.db-journal
+bot.log
+
+# Generated at runtime
+mcp.json
+.mcp-*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
